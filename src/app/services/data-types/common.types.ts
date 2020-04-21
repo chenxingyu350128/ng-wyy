@@ -38,5 +38,10 @@ export type SongSheet = {
   name: string;
   picUrl: string;
   playCount: number;
-  tracks: Song[]
+  tracks: Song[];
+}
+//歌曲播放地址
+export type SongUrl = {
+  id: number;
+  url: string;
 }

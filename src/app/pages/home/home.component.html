@@ -1,12 +1,12 @@
 <div class="home">
-  <app-wy-carousel 
-  #wyCarousel 
+  <app-wy-carousel
+  #wyCarousel
   [activeIndex]="carouselActiveIndex"
   (changeSlide)="onChangeSlide($event)"
   >
-    <nz-carousel 
-      nzAutoPlay 
-      nzEffect="fade" 
+    <nz-carousel
+      nzAutoPlay
+      nzEffect="fade"
       [nzDotRender]="wyCarousel.dotRef"
       (nzBeforeChange)="onBeforeChange($event)"
     >
@@ -15,7 +15,7 @@
                 <img [src]="item.imageUrl" />
             </a>
         </div>
-    </nz-carousel> 
+    </nz-carousel>
   </app-wy-carousel>
   <div class="main">
     <div class="wrap">
@@ -38,10 +38,11 @@
           </div>
           <div class="down">
             <div class="down-wrap">
-              <app-single-sheet 
+              <app-single-sheet
                 *ngFor="let item of songSheet"
                 class="sheet-item"
                 [sheet]="item"
+                (onPlay)="onPlaySheet($event)"
               >
 
               </app-single-sheet>
