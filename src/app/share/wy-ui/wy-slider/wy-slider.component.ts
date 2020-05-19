@@ -1,9 +1,9 @@
-import { Component, OnInit, ViewEncapsulation, ChangeDetectionStrategy, ElementRef, ViewChild, Input, Inject, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ViewEncapsulation, ChangeDetectionStrategy, ElementRef, ViewChild, Input, Inject, ChangeDetectorRef, EventEmitter, Output } from '@angular/core';
 import { tap, pluck, map, distinctUntilChanged, takeUntil, filter } from 'rxjs/internal/operators';
 import { SliderEventObserverConfig, SliderValue } from './wy-slider-types';
 import { DOCUMENT } from '@angular/common';
 import { sliderEvent, getElementOffset } from './sy-slider-helper';
-import { Observable, fromEvent, merge } from 'rxjs';
+import { Observable, fromEvent, merge, Subscription } from 'rxjs';
 import { inArray } from 'src/app/utils/array';
 import { limitNumberInRange, getPercent } from 'src/app/utils/number';
 
@@ -20,17 +20,25 @@ export class WySliderComponent implements OnInit {
   @Input() wyMin = 0;
   @Input() wyMax = 100;
 
+  @Output() wyOnAfterChange = new EventEmitter<SliderValue>();
+
   private sliderDom: HTMLDivElement;
+  @ViewChild('wySlider', { static: true }) 
+  private wySlider: ElementRef;
+
   private dragStart$: Observable<number>;
   private dragMove$: Observable<number>;
   private dragEnd$: Observable<Event>;
+  private dragStart_: Subscription | null;
+  private dragMove_: Subscription | null;
+  private dragEnd_: Subscription | null;
+  
+  
+  
+  private isDragging = false;
 
   value: SliderValue = null;
   offset: SliderValue = null;
-
-  private isDragging = false;
-  @ViewChild('wySlider', { static: true }) private wySlider: ElementRef;
-
 
   constructor(
     @Inject(DOCUMENT) private doc: Document,
@@ -46,7 +54,7 @@ export class WySliderComponent implements OnInit {
   }
 
   private createDraggingObservables(){
-    const orientField = this.wyVertical ? 'pageX' : 'pageY'
+    const orientField = this.wyVertical ? 'pageY' : 'pageX'
     const mouse: SliderEventObserverConfig = {
       start: 'mousedown',
       move: 'mousemove',
@@ -97,21 +105,21 @@ export class WySliderComponent implements OnInit {
   }
 
   private subscribeDrag(events: string[] = ['start', 'move', 'end']){
-    if(inArray(events, 'start') && this.dragStart$){
-      this.dragStart$.subscribe(this.onDragStart.bind(this))
+    if(inArray(events, 'start') && this.dragStart$ && !this.dragStart_){
+      this.dragStart_ = this.dragStart$.subscribe(this.onDragStart.bind(this))
     }
-    if(inArray(events, 'move') && this.dragMove$){
-      this.dragMove$.subscribe(this.onDragMove.bind(this))
+    if(inArray(events, 'move') && this.dragMove$ && !this.dragMove_){
+      this.dragMove_ = this.dragMove$.subscribe(this.onDragMove.bind(this))
     }
-    if(inArray(events, 'end') && this.dragEnd$){
-      this.dragEnd$.subscribe(this.onDragEnd.bind(this))
+    if(inArray(events, 'end') && this.dragEnd$ && !this.dragEnd_){
+      this.dragEnd_ = this.dragEnd$.subscribe(this.onDragEnd.bind(this))
     }
   }
 
   private onDragStart(value: number){
     console.log('value:', value)
     this.toggleDragMoving(true);
-
+    this.setValue(value);
   }
 
   private onDragMove(value: number){
@@ -122,14 +130,27 @@ export class WySliderComponent implements OnInit {
   }
 
   private onDragEnd(){
+    // this.wyOnAfterChange.emit(this.value);
     this.toggleDragMoving(false);
     this.cdr.markForCheck();
 
   }
 
   private setValue(value: SliderValue){
-    this.value - value
+    // if (this.valueEqual(this.value, value)) {
+
+    //   this.value = value
+    //   this.updateTrackAndHandles()
+    // }
+    this.value = value
     this.updateTrackAndHandles()
+  }
+
+  private valueEqual (valA: SliderValue, valB: SliderValue) {
+    if (typeof valA !== typeof valB) {
+      return false
+    }
+    return valA === valB
   }
 
   private updateTrackAndHandles(){
@@ -142,13 +163,12 @@ export class WySliderComponent implements OnInit {
     return getPercent(this.wyMin, this.wyMax, value)
   }
   private toggleDragMoving(movable: boolean){
+    this.isDragging = movable;
     if(movable){
-      this.isDragging = movable;
       this.subscribeDrag(['move', 'end'])
     }
     else{
-      // this.unsubscribeDrag(['move', 'end'])
-
+      this.unsubscribeDrag(['move', 'end'])
     }
   }
 
@@ -171,4 +191,18 @@ export class WySliderComponent implements OnInit {
     const offSet = getElementOffset(this.sliderDom)
     return this.wyVertical ? offSet.top : offSet.left;
   }
+  private unsubscribeDrag(events: string[] = ['start', 'move', 'end']) {
+    if (inArray(events, 'start') && this.dragStart_) {
+      this.dragStart_.unsubscribe();
+      this.dragStart_ = null;
+    }
+    if (inArray(events, 'move') && this.dragMove_) {
+      this.dragMove_.unsubscribe();
+      this.dragMove_ = null;
+    }
+    if (inArray(events, 'end') && this.dragEnd_) {
+      this.dragEnd_.unsubscribe();
+      this.dragEnd_ = null;
+    }
+  }  
 }

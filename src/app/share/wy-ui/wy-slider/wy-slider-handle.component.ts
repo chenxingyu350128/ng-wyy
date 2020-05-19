@@ -1,4 +1,4 @@
-import { Component, OnInit, Input, SimpleChange, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, Input, ChangeDetectionStrategy, OnChanges, SimpleChanges } from '@angular/core';
 import { WySliderStyle } from './wy-slider-types';
 
 @Component({
@@ -6,20 +6,19 @@ import { WySliderStyle } from './wy-slider-types';
   template: `<div class="wy-slider-handle" [ngStyle]="style"></div>`,
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class WySliderHandleComponent implements OnInit {
+export class WySliderHandleComponent implements OnInit, OnChanges {
 
   @Input() wyVertical = false;
   @Input() wyOffset: number;
-  constructor() { }
   style:WySliderStyle = {};
+  constructor() { }
   ngOnInit() {
   }
 
-  ngOnChanges(changes: SimpleChange): void {
-    if(changes['wyOffset']){
-      this.style[this.wyVertical?'bottom':'left'] = this.wyOffset + '%';
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes.wyOffset) {
+      this.style[this.wyVertical ? 'bottom' : 'left'] = this.wyOffset + '%';
     }
-    throw new Error('Method not implemented')
   }
 
 }

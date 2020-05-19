@@ -1,4 +1,4 @@
-import { Component, OnInit, Input, SimpleChange, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, OnChanges, Input, SimpleChanges, ChangeDetectionStrategy } from '@angular/core';
 import { WySliderStyle } from './wy-slider-types';
 
 @Component({
@@ -6,16 +6,16 @@ import { WySliderStyle } from './wy-slider-types';
   template: `<div class="wy-slider-track" [ngStyle]="style"></div>`,
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class WySliderTrackComponent implements OnInit {
+export class WySliderTrackComponent implements OnInit, OnChanges {
   @Input() wyVertical = false;
   @Input() wyLength: number;
   style:WySliderStyle = {}
   constructor() { }
-
+O
   ngOnInit() {
   }
 
-  ngOnChanges(changes: SimpleChange): void {
+  ngOnChanges(changes: SimpleChanges): void {
     if(changes['wyLength']){
       if(this.wyVertical){
         this.style.height = this.wyLength + '%';
@@ -27,6 +27,6 @@ export class WySliderTrackComponent implements OnInit {
         this.style.height = null
       }
     }
-    throw new Error('Method not implemented')
+    // throw new Error('Method not implemented')
   }
 }
