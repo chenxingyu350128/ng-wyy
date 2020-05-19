@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewEncapsulation, ChangeDetectionStrategy, ElementRef, ViewChild, Input, Inject, ChangeDetectorRef, EventEmitter, Output } from '@angular/core';
+import { Component, OnInit, ViewEncapsulation, ChangeDetectionStrategy, ElementRef, ViewChild, Input, Inject, ChangeDetectorRef, EventEmitter, Output, OnDestroy, forwardRef } from '@angular/core';
 import { tap, pluck, map, distinctUntilChanged, takeUntil, filter } from 'rxjs/internal/operators';
 import { SliderEventObserverConfig, SliderValue } from './wy-slider-types';
 import { DOCUMENT } from '@angular/common';
@@ -6,16 +6,22 @@ import { sliderEvent, getElementOffset } from './sy-slider-helper';
 import { Observable, fromEvent, merge, Subscription } from 'rxjs';
 import { inArray } from 'src/app/utils/array';
 import { limitNumberInRange, getPercent } from 'src/app/utils/number';
+import { NG_VALUE_ACCESSOR, ControlValueAccessor } from '@angular/forms';
 
 @Component({
   selector: 'app-wy-slider',
   templateUrl: './wy-slider.component.html',
   styleUrls: ['./wy-slider.component.less'],
   encapsulation: ViewEncapsulation.None,
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  providers: [{
+    provide: NG_VALUE_ACCESSOR,
+    useExisting: forwardRef(() => WySliderComponent),
+    multi: true
+  }]
 
 })
-export class WySliderComponent implements OnInit {
+export class WySliderComponent implements OnInit, OnDestroy, ControlValueAccessor {
   @Input() wyVertical = false;
   @Input() wyMin = 0;
   @Input() wyMax = 100;
@@ -136,14 +142,31 @@ export class WySliderComponent implements OnInit {
 
   }
 
-  private setValue(value: SliderValue){
-    // if (this.valueEqual(this.value, value)) {
+  private setValue(value: SliderValue, needCheck = false){
+    if (needCheck) {
+      if (this.isDragging) return
+      this.value = this.formatValue(value)
+    }
+    else if (!this.valueEqual(this.value, value)) {
 
-    //   this.value = value
-    //   this.updateTrackAndHandles()
-    // }
-    this.value = value
-    this.updateTrackAndHandles()
+      this.value = value
+      this.updateTrackAndHandles()
+      this.onValueChange(this.value)
+    }
+  }
+
+  private formatValue (value: SliderValue): SliderValue {
+    let res = value
+    if (this.assertValueValid(value)) {
+     res = this.wyMin
+    } else {
+      res = limitNumberInRange(value, this.wyMin, this.wyMax)
+    }
+    return res
+  }
+
+  private assertValueValid (value: SliderValue) : boolean{
+    return isNaN(typeof value !== 'number' ? parseFloat(value) : value)
   }
 
   private valueEqual (valA: SliderValue, valB: SliderValue) {
@@ -205,4 +228,22 @@ export class WySliderComponent implements OnInit {
       this.dragEnd_ = null;
     }
   }  
+
+  private onValueChange (value: SliderValue): void{}
+  private onTouched (): void{}
+
+
+  writeValue (value: SliderValue): void {
+    this.setValue(value)
+  }
+  registerOnChange (fn: (value: SliderValue) => void): void {
+    this.onValueChange = fn
+  }
+  registerOnTouched (fn: () => void): void {
+    this.onTouched = fn
+  }
+
+  ngOnDestroy (): void {
+    this.unsubscribeDrag()
+  }
 }
